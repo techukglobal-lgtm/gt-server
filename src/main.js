@@ -57,6 +57,11 @@ app.use("/user/api", authRoutes);
 app.use("/test/api", testRoute);
 app.use("/user/api", companyRoutes);
 app.use("/user/api", depositRoutes);
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    message: "Server is healthy",
+  });
+});
 
 // // Start the minting commission cron job when server starts
 // startMintingCronJob();
