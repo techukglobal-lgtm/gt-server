@@ -25,7 +25,7 @@ const corsOptions = {
     "http://localhost:3005",
     "http://localhost:5173",
     "http://localhost:5174",
-    "https://dashboard.bittrend.co",
+    "https://globaltech-1.web.app",
     "http://appbittrend.m5networkhub.com",
     "https://adminbittrend.m5networkhub.com",
     "http://adminbittrend.m5networkhub.com",
