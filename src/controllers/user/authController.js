@@ -664,7 +664,7 @@ exports.login = async (req, res) => {
         message: "User not found",
       });
     }
-    if (user.status !== "active") {
+    if (user.status == "inactive") {
       return res.json({
         status: "error",
         message: "Your account is not active. Please wait for admin Approval.",
