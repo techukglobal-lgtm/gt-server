@@ -39,8 +39,9 @@ exports.claimDailyProfit = async (req, res) => {
     }
     const user = await User.findById(userId);
 
-    // 4. Calculate 2% profit
-    const profit = user.walletBalance * 0.02;
+    // 4. Calculate random profit between 1% and 2%
+    const randomPercentage = 0.01 + Math.random() * (0.02 - 0.01);
+    const profit = user.walletBalance * randomPercentage;
 
     // 5. Update user's wallet
     user.cryptoWallet += profit;
@@ -130,7 +131,6 @@ exports.getMiningStatus = async (req, res) => {
 };
 
 exports.getProfitHistory = async (req, res) => {
-  
   try {
     const userId = await checkAuthorization(req, res);
     if (!userId) {
