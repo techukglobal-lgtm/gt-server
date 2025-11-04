@@ -5,6 +5,9 @@ const Transaction = require("../../models/Transaction");
 const mongoose = require("mongoose");
 const MiningSession = require("../../models/MiningSession");
 const checkAuthorization = require("../../middlewares/authMiddleware");
+const {
+  default: dailyCommissionSettings,
+} = require("../../models/dailyCommissionSettings");
 
 exports.claimDailyProfit = async (req, res) => {
   try {
@@ -39,8 +42,33 @@ exports.claimDailyProfit = async (req, res) => {
     }
     const user = await User.findById(userId);
 
-    // 4. Calculate random profit between 1% and 2%
-    const randomPercentage = 0.01 + Math.random() * (0.02 - 0.01);
+    // 4️⃣ Fetch commission range dynamically from DB
+    const settingsDoc = await dailyCommissionSettings.findOne({
+      keyname: "Daily Commission Settings",
+    });
+
+    if (!settingsDoc) {
+      return res
+        .status(500)
+        .json({ success: false, message: "Commission settings not found" });
+    }
+
+    const { startingLevel, endingLevel } = settingsDoc.value;
+
+    // ✅ Ensure they’re valid numbers
+    const start = Number(startingLevel) / 100;
+    const end = Number(endingLevel) / 100;
+
+    if (isNaN(start) || isNaN(end) || start <= 0 || end <= 0 || end < start) {
+      return res.status(500).json({
+        success: false,
+        message: "Invalid commission range in settings",
+      });
+    }
+
+    // 5️⃣ Calculate random profit between start% and end%
+    const randomPercentage = start + Math.random() * (end - start);
+
     const profit = user.walletBalance * randomPercentage;
 
     // 5. Update user's wallet

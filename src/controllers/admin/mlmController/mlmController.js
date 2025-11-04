@@ -282,6 +282,121 @@ exports.getAllDepositTransactions = async (req, res) => {
     });
   }
 };
+exports.getAllDepositByAdminTransactions = async (req, res) => {
+  try {
+    // 🔒 1. Authorization
+    const authUser = await checkAuthorization(req, res);
+    if (!authUser) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
+    const { page = 1, limit = 50 } = req.body;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    // 🎯 2. Filter only deposit transactions
+    const filter = { transactionType: "deposit_by-admin" };
+
+    // 📦 3. Get transactions
+    const transactions = await Transaction.find(filter)
+      .sort({ createdAt: -1 })
+      .limit(parseInt(limit))
+      .skip(skip);
+
+    const total = await Transaction.countDocuments(filter);
+
+    // 💰 4. Collect all deposit IDs from these transactions
+    const depositIds = transactions
+      .filter((tx) => tx.depositDetails?.depositId)
+      .map((tx) => tx.depositDetails.depositId);
+
+    // 🏦 5. Fetch all related deposit documents
+    let depositMap = {};
+    if (depositIds.length > 0) {
+      const deposits = await Deposit.find({ _id: { $in: depositIds } }).lean();
+      depositMap = deposits.reduce((acc, dep) => {
+        acc[dep._id.toString()] = dep;
+        return acc;
+      }, {});
+    }
+
+    // 👥 6. Collect all related user IDs
+    const userIds = new Set();
+    transactions.forEach((tx) => {
+      const sId = tx.senderId?.toString?.();
+      const rId = tx.receiverId?.toString?.();
+      if (sId && sId !== "0" && sId !== "system") userIds.add(sId);
+      if (rId && rId !== "0" && rId !== "system") userIds.add(rId);
+    });
+
+    const validIds = Array.from(userIds).filter((id) =>
+      mongoose.isValidObjectId(id)
+    );
+    const users = await User.find({ _id: { $in: validIds } }).select(
+      "_id name email username profileImage"
+    );
+
+    // 👤 7. Build user lookup
+    const userMap = {};
+    users.forEach((user) => {
+      userMap[user._id.toString()] = {
+        name: user.name || user.username || "Unknown User",
+        email: user.email,
+        profileImage: user.profileImage || null,
+      };
+    });
+
+    // 🔄 8. Enrich transactions with user + deposit details
+    const enrichedTransactions = transactions.map((tx) => {
+      const txObj = tx.toObject();
+      const sender = tx.senderId?.toString?.();
+      const receiver = tx.receiverId?.toString?.();
+
+      // Sender details
+      txObj.senderDetails =
+        sender === "0" || sender === "system"
+          ? { name: "Admin", isAdmin: true }
+          : userMap[sender] || { name: "Unknown User" };
+
+      // Receiver details
+      txObj.receiverDetails =
+        receiver === "0" || receiver === "system"
+          ? { name: "Admin", isAdmin: true }
+          : userMap[receiver] || { name: "Unknown User" };
+
+      // ✅ Attach deposit details
+      if (tx.depositDetails?.depositId) {
+        const depId = tx.depositDetails.depositId.toString();
+        if (depositMap[depId]) {
+          txObj.depositDetails = {
+            ...depositMap[depId],
+            depositId: depId,
+          };
+        }
+      }
+
+      return txObj;
+    });
+
+    // 📤 9. Final response
+    return res.json({
+      success: true,
+      transactions: enrichedTransactions,
+      pagination: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        pages: Math.ceil(total / parseInt(limit)),
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching deposit transactions:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error fetching deposit transactions",
+      error: error.message,
+    });
+  }
+};
 
 // Add this to your transaction controller
 

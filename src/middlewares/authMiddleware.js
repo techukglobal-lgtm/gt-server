@@ -1,41 +1,29 @@
-const jwt = require('jsonwebtoken');
-const User = require('../models/auth');
+const jwt = require("jsonwebtoken");
+const User = require("../models/auth");
+const jwtSecretKey = process.env.SECRET_KEY;
 
-const jwtSecretKey = process.env.SECRET_KEY
-
-async function checkAuthorization(req, res) {
-  // Check if the authorization header is present
+async function checkAuthorization(req) {
   if (!req.headers.authorization) {
-    res.json({ status: 'error', message: 'Authorization header is missing.' });
-    return false;
-  } else {
-    const token = req.headers.authorization.split(' ')[1];
-    return new Promise((resolve) => {
-      jwt.verify(token, jwtSecretKey, async (err, user) => {
-        if (err) {
-          res.json({ status: 'error', message: 'token_expired' });
-          resolve(false); // Use resolve instead of reject
-        } else {
-          try {
-            // const userData = await User.findOne({ username: user.username });
-            const userData = await User.findById(user.id)
+    return { success: false, message: "Authorization header is missing." };
+  }
 
-            if (userData && userData._id == user.id) {
-              resolve(userData.id);
-            } else {
-              res.json({ status: 'error', message: 'Invalid User.' });
-              resolve(false); // Use resolve instead of reject
-            }
-          } catch (error) {
-            console.error('Error fetching user:', error);
-            res.json({ status: 'error', message: 'Server error occurred' });
-            resolve(false); // Use resolve instead of reject
-          }
-        }
-      });
-    });
+  const token = req.headers.authorization.split(" ")[1];
+
+  try {
+    const decoded = jwt.verify(token, jwtSecretKey);
+    const userData = await User.findById(decoded.id);
+
+    if (!userData) {
+      return { success: false, message: "Invalid User." };
+    }
+
+    return userData.id;
+  } catch (error) {
+    if (error.name === "TokenExpiredError") {
+      return { success: false, message: "Token expired." };
+    }
+    return { success: false, message: "Invalid token." };
   }
 }
 
 module.exports = checkAuthorization;
-

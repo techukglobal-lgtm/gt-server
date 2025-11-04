@@ -28,6 +28,7 @@ const transactionSchema = new Schema(
       required: true,
       enum: [
         "deposit",
+        "deposit_by_admin",
         "level_commission_1",
         "level_commission_2",
         "level_commission_3",

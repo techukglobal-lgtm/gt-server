@@ -62,6 +62,7 @@ const {
   getBinaryTreePaginated,
   getAllDepositTransactions,
   updateDepositStatus,
+  getAllDepositByAdminTransactions,
 } = require("../../controllers/admin/mlmController/mlmController");
 const {
   getAdminDashboardData,
@@ -157,6 +158,10 @@ const {
   getMiningStatus,
   getProfitHistory,
 } = require("../../controllers/user/EarnControllerj");
+const { getDepositSettings, updateDepositSettings } = require("../../controllers/admin/depositSettingsController");
+const { getWithdrawalSettings, updateWithdrawalSettings } = require("../../controllers/admin/withdrawalSettingsController");
+const { getReferralCommissionSettings, updateReferralCommissionSettings } = require("../../controllers/admin/referralCommissionSettingsController");
+const { getDailyCommissionSettings, updateDailyCommissionSettings } = require("../../controllers/admin/dailyCommissionSettingsController");
 
 router.post("/upload", upload.single("media"), uploadMedia);
 
@@ -194,6 +199,7 @@ router.post("/addTransaction", createPendingTransaction);
 router.post("/updateTransactionStatus", updateTransactionStatus);
 router.post("/getTransactions", getTransactions);
 router.post("/updateDepositStatus", updateDepositStatus);
+router.post("/getAllDepositByAdminTransactions", getAllDepositByAdminTransactions);
 router.post("/getAllDepositTransactions", getAllDepositTransactions);
 router.post("/addfaqs", addFaq);
 router.post("/getWalletInsights", getAllWalletsData);
@@ -249,5 +255,14 @@ router.post("/getTransactionsByType", getTransactionsByType);
 router.post("/claimEarning", claimDailyProfit);
 router.post("/miningStatus", getMiningStatus);
 router.post("/getProfitHistory", getProfitHistory);
+
+router.post("/getdepositsettings", getDepositSettings);
+router.post("/updatedepositsettings", updateDepositSettings);
+router.post("/getwithdrawalsettings", getWithdrawalSettings);
+router.post("/updatewithdrawalsettings", updateWithdrawalSettings);
+router.post("/getreferralcommissionsettings", getReferralCommissionSettings);
+router.post("/updatereferralcommissionsettings", updateReferralCommissionSettings);
+router.post("/getdailycommissionsettings", getDailyCommissionSettings);
+router.post("/updatedailycommissionsettings", updateDailyCommissionSettings);
 
 module.exports = router;

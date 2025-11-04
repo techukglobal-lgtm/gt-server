@@ -11,10 +11,10 @@ exports.createWithdrawRequest = async (req, res) => {
         .status(401)
         .json({ success: false, message: "Unauthorized access" });
     }
-    const { amount, payoutAddress, deductedFrom } = req.body;
+    const { amount, payoutAddress, deductedFrom, withdrawalFee, minimumWithdrawalAmount } = req.body;
 
-    if (!amount || !payoutAddress || !deductedFrom) {
-      return res.status(400).json({ success: false, message: "Amount, address and deductedFrom are required" });
+    if (!amount || !payoutAddress || !deductedFrom || !withdrawalFee || !minimumWithdrawalAmount) {
+      return res.status(400).json({ success: false, message: "Amount, address, deductedFrom, withdrawalFee and minimumWithdrawalAmount are required" });
     }
 
     const user = await User.findById(userId);
@@ -28,17 +28,23 @@ exports.createWithdrawRequest = async (req, res) => {
     }
 
     // ✅ Minimum withdrawal limit
-    if (numericAmount < 25) {
-      return res.status(400).json({ success: false, message: "Minimum withdrawal amount is $25" });
+    if (numericAmount < minimumWithdrawalAmount) {
+      return res.status(400).json({ success: false, message: `Minimum withdrawal amount is $${minimumWithdrawalAmount}` });
     }
 
     // ✅ Balance check
-    if (numericAmount > user.cryptoWallet) {
-      return res.status(400).json({ success: false, message: "Insufficient balance" });
+    // ✅ Balance check based on deductedFrom
+    if (deductedFrom === "walletBalance" && numericAmount > user.walletBalance) {
+      return res.status(400).json({ success: false, message: "Insufficient wallet balance" });
     }
 
-    // 🧮 Calculate 6% fee
-    const fee = (numericAmount * 6) / 100;
+    if (deductedFrom === "cryptoWallet" && numericAmount > user.cryptoWallet) {
+      return res.status(400).json({ success: false, message: "Insufficient crypto balance" });
+    }
+
+
+    // 🧮 Calculate withdrawal fee
+    const fee = (numericAmount * withdrawalFee) / 100;
     const netAmount = numericAmount - fee;
 
     // ✅ Deduct balance atomically
@@ -61,7 +67,7 @@ exports.createWithdrawRequest = async (req, res) => {
       payoutAddress,
       status: "pending",
       feeInfo: {
-        percentageFee: 6,
+        percentageFee: withdrawalFee,
         totalFees: fee,
       },
     });
@@ -78,7 +84,7 @@ exports.createWithdrawRequest = async (req, res) => {
         withdrawalId: withdrawal._id,
         payoutAddress,
         feeInfo: {
-          percentageFee: 6,
+          percentageFee: withdrawalFee,
           totalFees: fee,
         },
         grossAmount: numericAmount,

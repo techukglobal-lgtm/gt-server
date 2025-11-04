@@ -48,6 +48,9 @@ const { updateUserRank } = require("../../controllers/user/rankController");
 const {
   getRegistraions,
 } = require("../../controllers/user/dashboardController");
+const {
+  addWalletBalance,
+} = require("../../controllers/admin/walletController");
 const uploadDir = path.join(__dirname, "../../public/uploads/profile");
 
 if (!fs.existsSync(uploadDir)) {
@@ -141,4 +144,5 @@ router.post("/getAllAccountsOfUser", getAllAccountsOfUser);
 // router.post("/getGreenIdUser", authController.getUserStatus);
 router.post("/getNewRegistrations", getRegistraions);
 router.post("/acceptRegistration", acceptRegistration);
+router.post("/addWalletBalance", addWalletBalance);
 module.exports = router;
